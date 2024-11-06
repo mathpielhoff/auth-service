@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from src.auth.routers import auth_router
 
+
 app = FastAPI(title="Auth Service", version="1.0")
 
 # Inclure le routeur d'authentification
