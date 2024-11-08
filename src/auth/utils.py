@@ -3,6 +3,8 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from src.auth.model import LoginResponse
+
 # Configuration pour le mot de passe et JWT
 SECRET_KEY = "your-secret-key"  # à remplacer par une clé secrète plus complexe
 ALGORITHM = "HS256"
@@ -34,3 +36,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_jwt(token: str) -> LoginResponse:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    username: str = payload.get("sub")
+    role: str = payload.get("role")
+    if username is None or role is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token payload invalid",
+        )
+    return LoginResponse(username=username, role=role)
