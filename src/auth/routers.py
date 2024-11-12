@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from src.auth.model.LoginResponse import LoginResponse
 from src.auth.model.LoginRequest import LoginRequest
-from src.auth.utils import authenticate_user, create_access_token, decode_jwt
+from src.auth.utils import authenticate_user
+
+from shared_lib.models.LoginResponse import LoginResponse
+from shared_lib.utils.jwt_utils import decode_jwt, create_access_token
 
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
