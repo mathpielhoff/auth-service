@@ -1,23 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from src.auth.model.LoginRequest import LoginRequest
-from src.auth.utils import authenticate_user
+from sqlalchemy.orm import Session
 
-from shared_lib.models.LoginResponse import LoginResponse
+
+from src.auth.model.RegisterRequest import RegisterRequest
+from src.auth.model.User import User
+from src.auth.model.LoginRequest import LoginRequest
+from src.auth.utils import hash_password, verify_password
+
 from shared_lib.utils.jwt_utils import decode_jwt, create_access_token
+from shared_lib.utils.db_utils import Base, get_db
 
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 @auth_router.post("/login")
-async def login(request: LoginRequest):
-    user = authenticate_user(request.username, request.password)
-    user = LoginResponse(
-        username=user["username"],
-        tenant_id=user["tenant_id"],
-        role=user["role"]
-    )
-    if not user:
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == request.username).first() 
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -34,3 +36,12 @@ async def whoami(token: str = Depends(oauth2_scheme)):
             detail="Incorrect username or password",
         )
     return {"username": user.username, "role": user.role}
+
+@auth_router.post("/register/")
+def create_user(request : RegisterRequest, db: Session = Depends(get_db)): 
+    hashed_password=hash_password(request.password)
+    user = User(username=request.username, email=request.email, hashed_password=hashed_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
