@@ -14,6 +14,11 @@ from shared_lib.utils.db_utils import Base, get_db
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+
+@auth_router.get("/")
+async def root():
+    return {"message": "Auth Service is running"}
+
 @auth_router.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first() 
@@ -41,6 +46,12 @@ async def whoami(token: str = Depends(oauth2_scheme)):
 def create_user(request : RegisterRequest, db: Session = Depends(get_db)): 
     hashed_password=hash_password(request.password)
     user = User(username=request.username, email=request.email, hashed_password=hashed_password)
+    getuser = db.query(User).filter(User.username == request.username).first() 
+    if getuser is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="username already exists",
+        )
     db.add(user)
     db.commit()
     db.refresh(user)

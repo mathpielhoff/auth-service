@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 *.pyo
+src/auth/__pycache__
 
 # Ignorer les fichiers de logs ou temporaires
 *.log
